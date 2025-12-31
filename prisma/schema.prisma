@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantType {
+  PERSONAL
+  BUSINESS
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  password          String
+  name              String
+  emailVerified     Boolean        @default(false)
+  verificationCode  String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  tenantUsers       TenantUser[]
+  transactions      Transaction[]
+  goals             Goal[]
+  
+  @@map("users")
+}
+
+model Tenant {
+  id          String      @id @default(cuid())
+  name        String
+  type        TenantType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  tenantUsers TenantUser[]
+  categories  Category[]
+  transactions Transaction[]
+  goals       Goal[]
+  companies   Company[]
+  
+  @@map("tenants")
+}
+
+model TenantUser {
+  id        String    @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      UserRole  @default(MEMBER)
+  createdAt DateTime  @default(now())
+  
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tenantId])
+  @@map("tenant_users")
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  color        String        @default("#6366f1")
+  icon         String?
+  type         TransactionType
+  tenantId     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  
+  @@map("categories")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  type        TransactionType
+  date        DateTime
+  categoryId  String
+  tenantId    String
+  userId      String
+  companyId   String?
+  employeeId  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  category    Category        @relation(fields: [categoryId], references: [id])
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id])
+  company     Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  employee    Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([date])
+  @@map("transactions")
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  name        String
+  targetAmount Float
+  currentAmount Float   @default(0)
+  deadline    DateTime?
+  tenantId    String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@map("goals")
+}
+
+model Company {
+  id          String        @id @default(cuid())
+  name        String
+  cnpj        String?
+  tenantId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees   Employee[]
+  transactions Transaction[]
+  revenues    Revenue[]
+  taxes       Tax[]
+  
+  @@map("companies")
+}
+
+model Employee {
+  id          String        @id @default(cuid())
+  name        String
+  email       String?
+  position    String?
+  companyId   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  
+  @@map("employees")
+}
+
+model Revenue {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  date        DateTime
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@map("revenues")
+}
+
+model Tax {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float
+  dueDate     DateTime
+  paid        Boolean  @default(false)
+  paidDate    DateTime?
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@map("taxes")
+}
