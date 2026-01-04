@@ -16,7 +16,7 @@ interface CompanyTabsProps {
 }
 
 export function CompanyTabs({
-  company,
+  company,                                                                                  
   stats,
   month,
   year,
