@@ -98,17 +98,6 @@ export function SettingsPage({ user }: SettingsPageProps) {
             </Button>
           </div>
           <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Relatório de Finanças Empresariais</p>
-              <p className="text-sm text-muted-foreground">
-                Receba um PDF mensal com os dados de suas empresas
-              </p>
-            </div>
-            <Button variant="outline" disabled>
-              Em breve
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
