@@ -15,7 +15,7 @@ export default function HomePage() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-2 b">
             <Link href="/auth/signin">
               <Button variant="ghost" className="h-9 px-4">
                 Entrar
@@ -23,8 +23,8 @@ export default function HomePage() {
             </Link>
 
             <Link href="/auth/signup">
-              <Button className="h-9 px-5 font-medium">
-                Começar Grátis
+              <Button variant="ghost" className="h-9 px-4">
+                Cadastre-se
               </Button>
             </Link>
           </nav>
