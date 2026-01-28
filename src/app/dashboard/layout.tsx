@@ -14,10 +14,6 @@ export default async function DashboardLayout({
     redirect("/auth/signin")
   }
 
-  if (!user.emailVerified) {
-    redirect("/auth/verify-email")
-  }
-
   return (
     <div className="flex min-h-screen">
       <DashboardNav user={user} />

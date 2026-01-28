@@ -4,16 +4,14 @@ import { prisma } from "@/lib/prisma"
 import {
   hashPassword,
   verifyPassword,
-  generateVerificationCode,
   generateResetToken,
   createSession,
   deleteSession,
 } from "@/lib/auth"
-import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email"
+import { sendPasswordResetEmail } from "@/lib/email"
 import {
   signUpSchema,
   signInSchema,
-  verifyEmailSchema,
   resetPasswordSchema,
   newPasswordSchema,
 } from "@/lib/validations/auth"
@@ -26,7 +24,7 @@ export async function signUp(formData: FormData) {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       name: formData.get("name") as string,
-      tenantType: (formData.get("tenantType") as string) || "PERSONAL",
+      tenantType: (formData.get("tenantType") as "PERSONAL" | "BUSINESS") || "PERSONAL",
     }
 
     const validated = signUpSchema.parse(data)
@@ -41,19 +39,48 @@ export async function signUp(formData: FormData) {
 
     const hashedPassword = await hashPassword(validated.password)
 
-    const verificationCode = generateVerificationCode()
-
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email: validated.email,
         password: hashedPassword,
         name: validated.name,
-        verificationCode,
-        emailVerified: false,
+        emailVerified: true,
+        defaultTenantType: data.tenantType,
       },
     })
 
-    await sendVerificationEmail(validated.email, verificationCode)
+    const tenantName = data.tenantType === "PERSONAL" ? "Finanças Pessoais" : "Finanças Empresariais"
+    
+    await prisma.tenant.create({
+      data: {
+        name: tenantName,
+        type: data.tenantType,
+        tenantUsers: {
+          create: {
+            userId: user.id,
+            role: "OWNER",
+          },
+        },
+        categories: {
+          createMany: {
+            data: [
+              { name: "Salário", type: "INCOME", color: "#10b981" },
+              { name: "Freelance", type: "INCOME", color: "#3b82f6" },
+              { name: "Investimentos", type: "INCOME", color: "#8b5cf6" },
+              { name: "Alimentação", type: "EXPENSE", color: "#ef4444" },
+              { name: "Transporte", type: "EXPENSE", color: "#f59e0b" },
+              { name: "Moradia", type: "EXPENSE", color: "#8b5cf6" },
+              { name: "Saúde", type: "EXPENSE", color: "#ec4899" },
+              { name: "Lazer", type: "EXPENSE", color: "#06b6d4" },
+              { name: "Educação", type: "EXPENSE", color: "#14b8a6" },
+              { name: "Outros", type: "EXPENSE", color: "#64748b" },
+            ],
+          },
+        },
+      },
+    })
+
+    await createSession(user.id)
 
     return { success: true }
   } catch (error: any) {
@@ -88,10 +115,6 @@ export async function signIn(formData: FormData) {
       return { error: "Email ou senha incorretos" }
     }
 
-    if (!user.emailVerified) {
-      return { error: "Por favor, verifique seu email antes de fazer login" }
-    }
-
     await createSession(user.id)
 
     return { success: true }
@@ -101,110 +124,6 @@ export async function signIn(formData: FormData) {
   }
 }
 
-export async function verifyEmail(formData: FormData) {
-  try {
-    const data = {
-      email: formData.get("email") as string,
-      code: formData.get("code") as string,
-      tenantType: (formData.get("tenantType") as "PERSONAL" | "BUSINESS") || "PERSONAL",
-    }
-
-    const validated = verifyEmailSchema.parse(data)
-
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: validated.email },
-    })
-
-    if (!user) {
-      return { error: "Usuário não encontrado" }
-    }
-
-    if (user.emailVerified) {
-      return { error: "Email já verificado" }
-    }
-
-    if (user.verificationCode !== validated.code) {
-      return { error: "Código inválido" }
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: true,
-        verificationCode: null,
-        defaultTenantType: data.tenantType,
-      },
-    })
-
-    // Create tenant based on selected type
-    const tenantName = data.tenantType === "PERSONAL" ? "Finanças Pessoais" : "Finanças Empresariais"
-    
-    await prisma.tenant.create({
-      data: {
-        name: tenantName,
-        type: data.tenantType,
-        tenantUsers: {
-          create: {
-            userId: user.id,
-            role: "OWNER",
-          },
-        },
-        categories: {
-          createMany: {
-            data: [
-              { name: "Salário", type: "INCOME", color: "#10b981" },
-              { name: "Freelance", type: "INCOME", color: "#3b82f6" },
-              { name: "Investimentos", type: "INCOME", color: "#8b5cf6" },
-              { name: "Alimentação", type: "EXPENSE", color: "#ef4444" },
-              { name: "Transporte", type: "EXPENSE", color: "#f59e0b" },
-              { name: "Moradia", type: "EXPENSE", color: "#8b5cf6" },
-              { name: "Saúde", type: "EXPENSE", color: "#ec4899" },
-              { name: "Lazer", type: "EXPENSE", color: "#06b6d4" },
-              { name: "Educação", type: "EXPENSE", color: "#14b8a6" },
-              { name: "Outros", type: "EXPENSE", color: "#64748b" },
-            ],
-          },
-        },
-      },
-    })
-
-    return { success: true, tenantType: data.tenantType }
-  } catch (error: any) {
-    console.error("VerifyEmail error:", error)
-    return { error: error.message || "Erro ao verificar email" }
-  }
-}
-
-export async function resendVerificationCode(email: string) {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (!user) {
-      return { error: "Usuário não encontrado" }
-    }
-
-    if (user.emailVerified) {
-      return { error: "Email já verificado" }
-    }
-
-    const verificationCode = generateVerificationCode()
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { verificationCode },
-    })
-
-    await sendVerificationEmail(email, verificationCode)
-
-    return { success: true }
-  } catch (error: any) {
-    console.error("ResendCode error:", error)
-    return { error: error.message || "Erro ao reenviar código" }
-  }
-}
 
 export async function resetPassword(formData: FormData) {
   try {

@@ -40,11 +40,11 @@ export default function SignUpPage() {
 
     toast({
       title: "Conta criada com sucesso!",
-      description: "Verifique seu email para ativar sua conta.",
+      description: "Você será redirecionado agora.",
     })
 
-    const email = formData.get("email") as string
-    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&type=${selectedType}`)
+    const redirectPath = selectedType === "PERSONAL" ? "/dashboard/personal" : "/dashboard/business"
+    router.push(redirectPath)
   }
 
   return (
@@ -99,49 +99,45 @@ export default function SignUpPage() {
                   >
                     ← Voltar
                   </button>
-                  <span className="text-xs text-gray-500">
-                    {selectedType === "PERSONAL" ? "Finanças Pessoais" : "Finanças Empresariais"}
-                  </span>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
+                  <Label htmlFor="name">Nome</Label>
                   <Input
                     id="name"
                     name="name"
                     type="text"
-                    placeholder="João Silva"
+                    placeholder="Seu nome"
                     required
                     disabled={loading}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="joao@exemplo.com"
+                    placeholder="seu@email.com"
                     required
                     disabled={loading}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Senha</Label>
                   <Input
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Sua senha"
                     required
                     disabled={loading}
-                    minLength={6}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Mínimo de 6 caracteres
-                  </p>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
+              <CardFooter className="flex flex-col space-y-3">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>
@@ -152,19 +148,22 @@ export default function SignUpPage() {
                     "Criar conta"
                   )}
                 </Button>
-                <p className="text-sm text-center text-muted-foreground">
-                  Já tem uma conta?{" "}
-                  <Link
-                    href="/auth/signin"
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Fazer login
-                  </Link>
-                </p>
               </CardFooter>
             </form>
           </>
         )}
+
+        <CardFooter className="justify-center border-t pt-6">
+          <p className="text-sm text-gray-600">
+            Já tem conta?{" "}
+            <Link
+              href="/auth/signin"
+              className="font-medium text-indigo-600 hover:underline"
+            >
+              Entrar
+            </Link>
+          </p>
+        </CardFooter>
       </Card>
     </div>
   )
