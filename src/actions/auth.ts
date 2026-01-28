@@ -26,6 +26,7 @@ export async function signUp(formData: FormData) {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       name: formData.get("name") as string,
+      tenantType: (formData.get("tenantType") as string) || "PERSONAL",
     }
 
     const validated = signUpSchema.parse(data)
@@ -105,6 +106,7 @@ export async function verifyEmail(formData: FormData) {
     const data = {
       email: formData.get("email") as string,
       code: formData.get("code") as string,
+      tenantType: (formData.get("tenantType") as "PERSONAL" | "BUSINESS") || "PERSONAL",
     }
 
     const validated = verifyEmailSchema.parse(data)
@@ -131,13 +133,17 @@ export async function verifyEmail(formData: FormData) {
       data: {
         emailVerified: true,
         verificationCode: null,
+        defaultTenantType: data.tenantType,
       },
     })
 
+    // Create tenant based on selected type
+    const tenantName = data.tenantType === "PERSONAL" ? "Finanças Pessoais" : "Finanças Empresariais"
+    
     await prisma.tenant.create({
       data: {
-        name: "Finanças Pessoais",
-        type: "PERSONAL",
+        name: tenantName,
+        type: data.tenantType,
         tenantUsers: {
           create: {
             userId: user.id,
@@ -163,7 +169,7 @@ export async function verifyEmail(formData: FormData) {
       },
     })
 
-    return { success: true }
+    return { success: true, tenantType: data.tenantType }
   } catch (error: any) {
     console.error("VerifyEmail error:", error)
     return { error: error.message || "Erro ao verificar email" }

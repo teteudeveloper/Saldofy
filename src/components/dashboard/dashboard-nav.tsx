@@ -10,34 +10,45 @@ interface DashboardNavProps {
     id: string
     email: string
     name: string
+    defaultTenantType?: "PERSONAL" | "BUSINESS"
   }
 }
 
 export function DashboardNav({ user }: DashboardNavProps) {
   const pathname = usePathname()
+  const isPersonal = user.defaultTenantType === "PERSONAL"
 
-  const navItems = [
+  const allNavItems = [
     {
       title: "Finanças Pessoais",
       href: "/dashboard/personal",
       icon: Home,
+      type: "PERSONAL",
     },
     {
       title: "Finanças Empresariais",
       href: "/dashboard/business",
       icon: Building2,
+      type: "BUSINESS",
     },
     {
       title: "Metas",
       href: "/dashboard/goals",
       icon: TrendingUp,
+      type: "BOTH",
     },
     {
       title: "Configurações",
       href: "/dashboard/settings",
       icon: Settings,
+      type: "BOTH",
     },
   ]
+
+  const navItems = allNavItems.filter((item) => {
+    if (item.type === "BOTH") return true
+    return item.type === user.defaultTenantType
+  })
 
   return (
     <aside className="w-64 border-r bg-white flex flex-col">

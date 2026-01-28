@@ -102,6 +102,7 @@ export async function getCurrentUser() {
       email: true,
       name: true,
       emailVerified: true,
+      defaultTenantType: true,
     },
   })
 

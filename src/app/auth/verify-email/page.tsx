@@ -18,11 +18,14 @@ function VerifyEmailContent() {
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [email, setEmail] = useState("")
+  const [tenantType, setTenantType] = useState<"PERSONAL" | "BUSINESS">("PERSONAL")
 
   useEffect(() => {
     const emailParam = searchParams.get("email")
+    const typeParam = (searchParams.get("type") as "PERSONAL" | "BUSINESS") || "PERSONAL"
     if (emailParam) {
       setEmail(emailParam)
+      setTenantType(typeParam)
     }
   }, [searchParams])
 
@@ -32,6 +35,7 @@ function VerifyEmailContent() {
 
     const formData = new FormData(e.currentTarget)
     formData.set("email", email)
+    formData.set("tenantType", tenantType)
     
     const result = await verifyEmail(formData)
 
@@ -47,10 +51,11 @@ function VerifyEmailContent() {
 
     toast({
       title: "Email verificado com sucesso!",
-      description: "Você já pode fazer login.",
+      description: "Você será redirecionado em breve.",
     })
 
-    router.push("/auth/signin")
+    const redirectPath = tenantType === "PERSONAL" ? "/dashboard/personal" : "/dashboard/business"
+    router.push(redirectPath)
   }
 
   async function handleResend() {
