@@ -471,3 +471,13 @@ export async function getBusinessStats(companyId: string, month: number, year: n
     return { error: error.message || "Erro ao buscar estatísticas" }
   }
 }
+
+export async function getUserCreationDateBusiness() {
+  try {
+    const user = await requireAuth()
+    return { data: user.createdAt }
+  } catch (error: any) {
+    console.error("GetUserCreationDate error:", error)
+    return { error: error.message || "Erro ao buscar data de criação" }
+  }
+}

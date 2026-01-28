@@ -208,13 +208,60 @@ export async function signOut() {
 
 export async function deleteAccount() {
   try {
-    const { getCurrentUser } = await import("@/lib/auth")
-    const user = await getCurrentUser()
+    const { requireAuth: authRequire } = await import("@/lib/auth")
+    const user = await authRequire()
 
     if (!user) {
       return { error: "Não autenticado" }
     }
 
+    // Delete all transactions
+    await prisma.transaction.deleteMany({
+      where: { userId: user.id },
+    })
+
+    // Delete all goals
+    await prisma.goal.deleteMany({
+      where: { userId: user.id },
+    })
+
+    // Delete all categories in tenant
+    await prisma.category.deleteMany({
+      where: {
+        tenant: {
+          tenantUsers: {
+            some: { userId: user.id },
+          },
+        },
+      },
+    })
+
+    // Delete tenant associations
+    await prisma.tenantUser.deleteMany({
+      where: { userId: user.id },
+    })
+
+    // Delete empty tenants
+    const tenantsWithUser = await prisma.tenant.findMany({
+      where: {
+        tenantUsers: {
+          some: { userId: user.id },
+        },
+      },
+    })
+
+    for (const tenant of tenantsWithUser) {
+      const remainingUsers = await prisma.tenantUser.count({
+        where: { tenantId: tenant.id },
+      })
+      if (remainingUsers === 0) {
+        await prisma.tenant.delete({
+          where: { id: tenant.id },
+        })
+      }
+    }
+
+    // Delete user
     await prisma.user.delete({
       where: { id: user.id },
     })

@@ -438,3 +438,19 @@ export async function getMonthlyStats(month: number, year: number) {
     return { error: error.message || "Erro ao buscar estatísticas" }
   }
 }
+
+export async function getUserCreationDate() {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: (await requireAuth()).id },
+      select: { createdAt: true },
+    })
+    if (!user) {
+      return { error: "Usuário não encontrado" }
+    }
+    return { data: user.createdAt }
+  } catch (error: any) {
+    console.error("GetUserCreationDate error:", error)
+    return { error: error.message || "Erro ao buscar data de criação" }
+  }
+}

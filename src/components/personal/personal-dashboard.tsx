@@ -5,25 +5,47 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, TrendingUp, TrendingDown, DollarSign } from "lucide-react"
-import { getMonthlyStats, getTransactions, getCategories } from "@/actions/personal-finance"
+import { getMonthlyStats, getTransactions, getCategories, getUserCreationDate } from "@/actions/personal-finance"
 import { TransactionList } from "./transaction-list"
 import { AddTransactionDialog } from "./add-transaction-dialog"
 import { CategoryBreakdown } from "./category-breakdown"
 
 export function PersonalDashboard() {
-  const [month, setMonth] = useState(new Date().getMonth() + 1)
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [month, setMonth] = useState<number | null>(null)
+  const [year, setYear] = useState<number | null>(null)
   const [stats, setStats] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [creationDate, setCreationDate] = useState<Date | null>(null)
 
   useEffect(() => {
-    loadData()
+    async function initializeDate() {
+      const result = await getUserCreationDate()
+      if (result.data) {
+        const date = new Date(result.data)
+        setCreationDate(date)
+        setMonth(date.getMonth() + 1)
+        setYear(date.getFullYear())
+      } else {
+        const now = new Date()
+        setMonth(now.getMonth() + 1)
+        setYear(now.getFullYear())
+      }
+    }
+    initializeDate()
+  }, [])
+
+  useEffect(() => {
+    if (month !== null && year !== null) {
+      loadData()
+    }
   }, [month, year])
 
   async function loadData() {
+    if (month === null || year === null) return
+
     setLoading(true)
 
     const [statsResult, transactionsResult, categoriesResult] = await Promise.all([
@@ -48,6 +70,8 @@ export function PersonalDashboard() {
   }
 
   function changeMonth(delta: number) {
+    if (month === null || year === null) return
+
     let newMonth = month + delta
     let newYear = year
 
@@ -57,6 +81,17 @@ export function PersonalDashboard() {
     } else if (newMonth < 1) {
       newMonth = 12
       newYear--
+    }
+
+    if (creationDate) {
+      const createdMonth = creationDate.getMonth() + 1
+      const createdYear = creationDate.getFullYear()
+      const selectedDate = new Date(newYear, newMonth - 1)
+      const createdDateOnly = new Date(createdYear, createdMonth - 1)
+
+      if (selectedDate < createdDateOnly) {
+        return
+      }
     }
 
     setMonth(newMonth)
@@ -109,7 +144,6 @@ export function PersonalDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold">Finanças Pessoais</h2>
@@ -124,11 +158,15 @@ export function PersonalDashboard() {
       </div>
 
       <div className="flex items-center justify-center space-x-4">
-        <Button variant="outline" onClick={() => changeMonth(-1)}>
+        <Button 
+          variant="outline" 
+          onClick={() => changeMonth(-1)}
+          disabled={!creationDate || (month !== null && month === creationDate.getMonth() + 1 && year === creationDate.getFullYear())}
+        >
           ←
         </Button>
         <span className="text-lg font-semibold min-w-[200px] text-center">
-          {monthNames[month - 1]} de {year}
+          {month !== null && year !== null ? `${monthNames[month - 1]} de ${year}` : "Carregando..."}
         </span>
         <Button variant="outline" onClick={() => changeMonth(1)}>
           →
@@ -199,7 +237,7 @@ export function PersonalDashboard() {
         onOpenChange={setShowAddDialog}
         categories={categories}
         onSuccess={loadData}
-        defaultDate={new Date(year, month - 1, new Date().getDate())}
+        defaultDate={month !== null && year !== null ? new Date(year, month - 1, new Date().getDate()) : new Date()}
       />
     </div>
   )
