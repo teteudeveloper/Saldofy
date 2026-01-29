@@ -158,7 +158,7 @@ export default function SignUpPage() {
             Já tem conta?{" "}
             <Link
               href="/auth/signin"
-              className="font-medium text-indigo-600 hover:underline"
+              className="text-primary hover:underline font-medium"
             >
               Entrar
             </Link>
