@@ -54,7 +54,6 @@ export function DashboardNav({ user }: DashboardNavProps) {
     <aside className="w-64 border-r bg-white flex flex-col">
       <div className="p-6 border-b">
         <Link href="/dashboard" className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600" />
           <span className="text-xl font-bold">Saldofy</span>
         </Link>
       </div>
