@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -39,8 +39,17 @@ export function EditTransactionDialog({
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [type, setType] = useState<"INCOME" | "EXPENSE">(transaction.type)
+  const [categoryId, setCategoryId] = useState<string>(transaction.categoryId)
 
-  const filteredCategories = categories.filter((cat) => cat.type === type)
+  const filteredCategories = useMemo(
+    () => categories.filter((cat) => cat.type === type),
+    [categories, type]
+  )
+
+  useEffect(() => {
+    const stillValid = filteredCategories.some((c) => c.id === categoryId)
+    if (!stillValid) setCategoryId(filteredCategories[0]?.id ?? "")
+  }, [type, filteredCategories, categoryId])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -48,6 +57,17 @@ export function EditTransactionDialog({
 
     const formData = new FormData(e.currentTarget)
     formData.set("type", type)
+    formData.set("categoryId", categoryId)
+
+    if (!categoryId) {
+      toast({
+        variant: "destructive",
+        title: "Categoria obrigatória",
+        description: "Selecione uma categoria para continuar.",
+      })
+      setLoading(false)
+      return
+    }
 
     const result = await updateTransaction(transaction.id, formData)
 
@@ -135,9 +155,8 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label htmlFor="categoryId">Categoria</Label>
               <Select
-                name="categoryId"
-                defaultValue={transaction.categoryId}
-                required
+                value={categoryId}
+                onValueChange={(value: string) => setCategoryId(value)}
                 disabled={loading}
               >
                 <SelectTrigger>

@@ -20,47 +20,51 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
-import { createTransaction } from "@/actions/personal-finance"
+import { createBusinessExpense } from "@/actions/business-finance"
 import { Loader2 } from "lucide-react"
 
-interface AddTransactionDialogProps {
+interface AddExpenseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  companyId: string
+  employees: any[]
   categories: any[]
   onSuccess: () => void
   defaultDate?: Date
 }
 
-export function AddTransactionDialog({
+export function AddExpenseDialog({
   open,
   onOpenChange,
+  companyId,
+  employees,
   categories,
   onSuccess,
   defaultDate,
-}: AddTransactionDialogProps) {
+}: AddExpenseDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE")
   const [categoryId, setCategoryId] = useState<string>("")
-
-  const filteredCategories = useMemo(
-    () => categories.filter((cat) => cat.type === type),
-    [categories, type]
+  const [employeeId, setEmployeeId] = useState<string>("")
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type === "EXPENSE"),
+    [categories]
   )
 
   useEffect(() => {
     if (!open) return
-    const stillValid = filteredCategories.some((c) => c.id === categoryId)
-    if (!stillValid) setCategoryId(filteredCategories[0]?.id ?? "")
-  }, [open, type, filteredCategories, categoryId])
+    const stillValid = expenseCategories.some((c) => c.id === categoryId)
+    if (!stillValid) setCategoryId(expenseCategories[0]?.id ?? "")
+  }, [open, expenseCategories, categoryId])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    formData.set("type", type)
+    formData.set("companyId", companyId)
     formData.set("categoryId", categoryId)
+    formData.set("employeeId", employeeId)
 
     if (!categoryId) {
       toast({
@@ -72,12 +76,12 @@ export function AddTransactionDialog({
       return
     }
 
-    const result = await createTransaction(formData)
+    const result = await createBusinessExpense(formData)
 
     if (result.error) {
       toast({
         variant: "destructive",
-        title: "Erro ao criar transação",
+        title: "Erro ao criar despesa",
         description: result.error,
       })
       setLoading(false)
@@ -85,8 +89,8 @@ export function AddTransactionDialog({
     }
 
     toast({
-      title: "Transação criada",
-      description: "A transação foi adicionada com sucesso.",
+      title: "Despesa criada",
+      description: "A despesa foi adicionada com sucesso.",
     })
 
     onSuccess()
@@ -103,38 +107,22 @@ export function AddTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[520px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Nova Transação</DialogTitle>
+            <DialogTitle>Adicionar Despesa</DialogTitle>
             <DialogDescription>
-              Adicione uma nova receita ou despesa
+              Registre uma despesa da empresa (ex: água, luz, aluguel, salários)
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select
-                value={type}
-                onValueChange={(value: string) => setType(value as "INCOME" | "EXPENSE")}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INCOME">Receita</SelectItem>
-                  <SelectItem value="EXPENSE">Despesa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>
               <Input
                 id="description"
                 name="description"
-                placeholder="Ex: Supermercado"
+                placeholder="Ex: Conta de luz"
                 required
                 disabled={loading}
               />
@@ -164,7 +152,7 @@ export function AddTransactionDialog({
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredCategories.map((category) => (
+                  {expenseCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center space-x-2">
                         <div
@@ -173,6 +161,26 @@ export function AddTransactionDialog({
                         />
                         <span>{category.name}</span>
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="employeeId">Funcionário (opcional)</Label>
+              <Select
+                value={employeeId}
+                onValueChange={(value: string) => setEmployeeId(value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um funcionário (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -212,7 +220,7 @@ export function AddTransactionDialog({
                   Criando...
                 </>
               ) : (
-                "Criar Transação"
+                "Adicionar"
               )}
             </Button>
           </DialogFooter>

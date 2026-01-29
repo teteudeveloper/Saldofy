@@ -12,6 +12,7 @@ import { sendPasswordResetEmail } from "@/lib/email"
 import {
   signUpSchema,
   signInSchema,
+  verifyEmailSchema,
   resetPasswordSchema,
   newPasswordSchema,
 } from "@/lib/validations/auth"
@@ -121,6 +122,47 @@ export async function signIn(formData: FormData) {
   } catch (error: any) {
     console.error("SignIn error:", error)
     return { error: error.message || "Erro ao fazer login" }
+  }
+}
+
+export async function verifyEmail(formData: FormData) {
+  try {
+    const data = {
+      email: formData.get("email") as string,
+      code: formData.get("code") as string,
+    }
+
+    const validated = verifyEmailSchema.parse(data)
+
+    const user = await prisma.user.findUnique({
+      where: { email: validated.email },
+      select: { id: true },
+    })
+
+    if (!user) {
+      return { error: "Usuário não encontrado" }
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    })
+
+    await createSession(user.id)
+    return { success: true }
+  } catch (error: any) {
+    console.error("VerifyEmail error:", error)
+    return { error: error.message || "Erro ao verificar email" }
+  }
+}
+
+export async function resendVerificationCode(email: string) {
+  try {
+    if (!email) return { error: "Email inválido" }
+    return { success: true }
+  } catch (error: any) {
+    console.error("ResendVerificationCode error:", error)
+    return { error: error.message || "Erro ao reenviar código" }
   }
 }
 

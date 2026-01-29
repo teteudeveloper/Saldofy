@@ -5,10 +5,9 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, TrendingUp } from "lucide-react"
-import { prisma } from "@/lib/prisma"
 import { useToast } from "@/components/ui/use-toast"
 import { AddRevenueDialog } from "./add-revenue-dialog"
-import { deleteRevenue } from "@/actions/business-finance"
+import { deleteRevenue, getRevenuesByCompany } from "@/actions/business-finance"
 import {
   Dialog,
   DialogContent,
@@ -44,15 +43,20 @@ export function RevenuesTab({
 
   async function loadRevenues() {
     setLoading(true)
-    
-    const response = await fetch(
-      `/api/revenues?companyId=${company.id}&month=${month}&year=${year}`
-    )
-    const data = await response.json()
-    
-    if (data.revenues) {
-      setRevenues(data.revenues)
+
+    const result = await getRevenuesByCompany(company.id, month, year)
+    if (result.error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao buscar receitas",
+        description: result.error,
+      })
+      setRevenues([])
+      setLoading(false)
+      return
     }
+
+    if (result.data) setRevenues(result.data)
     
     setLoading(false)
   }
@@ -174,7 +178,13 @@ export function RevenuesTab({
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         companyId={company.id}
-        defaultDate={new Date(year, month - 1, new Date().getDate())}
+        defaultDate={
+          new Date(
+            year,
+            month - 1,
+            Math.min(new Date().getDate(), new Date(year, month, 0).getDate())
+          )
+        }
         onSuccess={() => {
           loadRevenues()
           onUpdate()

@@ -11,6 +11,7 @@ export interface Employee {
   name: string
   email?: string
   position?: string
+  monthlyCost: number
   companyId: string
   createdAt: Date
   updatedAt: Date
@@ -45,6 +46,7 @@ export interface BusinessStats {
   taxesPaid: number
   taxesPending: number
   employeeCount: number
+  totalEmployeeCosts?: number
   expensesByEmployee: {
     employee: Employee
     total: number

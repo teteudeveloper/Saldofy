@@ -104,6 +104,21 @@ export function AddEmployeeDialog({
                 disabled={loading}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="monthlyCost">Custo mensal (opcional)</Label>
+              <Input
+                id="monthlyCost"
+                name="monthlyCost"
+                type="number"
+                step="0.01"
+                placeholder="0,00"
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Ex: salário + encargos (valor mensal).
+              </p>
+            </div>
           </div>
 
           <DialogFooter>

@@ -73,6 +73,13 @@ export function EmployeesTab({ company, onUpdate }: EmployeesTabProps) {
     setDeletingId(null)
   }
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value)
+  }
+
   if (loading) {
     return (
       <Card>
@@ -135,6 +142,13 @@ export function EmployeesTab({ company, onUpdate }: EmployeesTabProps) {
                             <span>{employee.email}</span>
                           </div>
                         )}
+                        {typeof employee.monthlyCost === "number" &&
+                          employee.monthlyCost > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <span>Custo:</span>
+                              <span>{formatCurrency(employee.monthlyCost)}</span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>

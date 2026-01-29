@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Plus, Check, Trash2, Calendar, AlertCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { AddTaxDialog } from "./add-tax-dialog"
-import { markTaxAsPaid, deleteTax } from "@/actions/business-finance"
+import {
+  markTaxAsPaid,
+  deleteTax,
+  getTaxesByCompany,
+} from "@/actions/business-finance"
 import {
   Dialog,
   DialogContent,
@@ -38,15 +42,20 @@ export function TaxesTab({ company, month, year, onUpdate }: TaxesTabProps) {
 
   async function loadTaxes() {
     setLoading(true)
-    
-    const response = await fetch(
-      `/api/taxes?companyId=${company.id}&month=${month}&year=${year}`
-    )
-    const data = await response.json()
-    
-    if (data.taxes) {
-      setTaxes(data.taxes)
+
+    const result = await getTaxesByCompany(company.id, month, year)
+    if (result.error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao buscar impostos",
+        description: result.error,
+      })
+      setTaxes([])
+      setLoading(false)
+      return
     }
+
+    if (result.data) setTaxes(result.data)
     
     setLoading(false)
   }

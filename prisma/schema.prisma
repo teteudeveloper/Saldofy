@@ -153,6 +153,7 @@ model Employee {
   name        String
   email       String?
   position    String?
+  monthlyCost Float         @default(0)
   companyId   String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
