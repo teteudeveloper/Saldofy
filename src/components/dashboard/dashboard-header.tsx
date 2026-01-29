@@ -64,20 +64,22 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+            <Button variant="ghost" className="relative h-14 w-14 rounded-full">
+               <User className="h-10 w-10 text-gray-700" />
             </Button>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
+
             <DropdownMenuItem className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
+              <User className="h-6 w-6 text-gray-700" />
               <span>{user.name}</span>
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
               className="cursor-pointer"
               onClick={() => signOut()}
@@ -85,6 +87,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>
+
             <DropdownMenuItem
               className="cursor-pointer text-red-600"
               onClick={() => setShowDeleteDialog(true)}
