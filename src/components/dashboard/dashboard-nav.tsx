@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Building2, Settings, TrendingUp } from "lucide-react"
+import { getDashboardNavItems } from "./dashboard-nav-items"
 
 interface DashboardNavProps {
   user: {
@@ -16,42 +16,10 @@ interface DashboardNavProps {
 
 export function DashboardNav({ user }: DashboardNavProps) {
   const pathname = usePathname()
-  const isPersonal = user.defaultTenantType === "PERSONAL"
-
-  const allNavItems = [
-    {
-      title: "Finanças Pessoais",
-      href: "/dashboard/personal",
-      icon: Home,
-      type: "PERSONAL",
-    },
-    {
-      title: "Finanças Empresariais",
-      href: "/dashboard/business",
-      icon: Building2,
-      type: "BUSINESS",
-    },
-    {
-      title: "Metas",
-      href: "/dashboard/goals",
-      icon: TrendingUp,
-      type: "BOTH",
-    },
-    {
-      title: "Configurações",
-      href: "/dashboard/settings",
-      icon: Settings,
-      type: "BOTH",
-    },
-  ]
-
-  const navItems = allNavItems.filter((item) => {
-    if (item.type === "BOTH") return true
-    return item.type === user.defaultTenantType
-  })
+  const navItems = getDashboardNavItems(user)
 
   return (
-    <aside className="w-64 border-r bg-white flex flex-col">
+    <aside className="hidden md:flex w-64 border-r bg-white flex-col">
       <div className="p-6 border-b">
         <Link href="/dashboard" className="flex items-center space-x-2">
           <span className="text-xl font-bold">Saldofy</span>

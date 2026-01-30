@@ -80,9 +80,9 @@ export function TransactionList({
         {transactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors"
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors"
           >
-            <div className="flex items-center space-x-4">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
               <div
                 className="h-10 w-10 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: transaction.category.color + "20" }}
@@ -99,9 +99,11 @@ export function TransactionList({
                   />
                 )}
               </div>
-              <div>
-                <p className="font-medium">{transaction.description}</p>
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <p className="font-medium truncate sm:whitespace-normal sm:break-words">
+                  {transaction.description}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                   <span>{transaction.category.name}</span>
                   <span>•</span>
                   <span>{formatDate(transaction.date)}</span>
@@ -109,7 +111,7 @@ export function TransactionList({
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
               <span
                 className={`text-lg font-semibold ${
                   transaction.type === "INCOME"

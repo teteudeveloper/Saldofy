@@ -21,12 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DashboardMobileNav } from "./dashboard-mobile-nav"
 
 interface DashboardHeaderProps {
   user: {
     id: string
     email: string
     name: string
+    defaultTenantType?: "PERSONAL" | "BUSINESS" | null
   }
 }
 
@@ -57,15 +59,19 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
   return (
     <>
-      <header className="h-16 border-b bg-white flex items-center justify-between px-6">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+      <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-3 min-w-0">
+          <DashboardMobileNav user={user} />
+          <h1 className="text-lg sm:text-2xl font-bold truncate">Dashboard</h1>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-14 w-14 rounded-full">
-               <User className="h-10 w-10 text-gray-700" />
+            <Button
+              variant="ghost"
+              className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full"
+            >
+               <User className="h-7 w-7 sm:h-10 sm:w-10 text-gray-700" />
             </Button>
           </DropdownMenuTrigger>
 

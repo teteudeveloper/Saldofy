@@ -1,0 +1,83 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Menu } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
+import { getDashboardNavItems } from "./dashboard-nav-items"
+
+interface DashboardMobileNavProps {
+  user: {
+    id: string
+    email: string
+    name: string
+    defaultTenantType?: "PERSONAL" | "BUSINESS" | null
+  }
+}
+
+export function DashboardMobileNav({ user }: DashboardMobileNavProps) {
+  const pathname = usePathname()
+  const navItems = getDashboardNavItems(user)
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Abrir menu</span>
+        </Button>
+      </SheetTrigger>
+
+      <SheetContent
+        side="left"
+        className="w-72 max-w-[85vw] p-0 flex flex-col"
+      >
+        <div className="p-6 border-b">
+          <Link href="/dashboard" className="flex items-center space-x-2">
+            <span className="text-xl font-bold">Saldofy</span>
+          </Link>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname.startsWith(item.href)
+
+            return (
+              <SheetClose asChild key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-indigo-50 text-indigo-600 font-medium"
+                      : "text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.title}</span>
+                </Link>
+              </SheetClose>
+            )
+          })}
+        </nav>
+
+        <div className="p-4 border-t">
+          <div className="flex items-center space-x-3 px-4 py-3">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+

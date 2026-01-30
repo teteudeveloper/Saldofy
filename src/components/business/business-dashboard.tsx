@@ -214,14 +214,14 @@ export function BusinessDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold">Finanças Empresariais</h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-3xl font-bold">Finanças Empresariais</h2>
           <p className="text-muted-foreground">
             Gerencie suas empresas e finanças corporativas
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
+        <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nova Empresa
         </Button>
@@ -231,7 +231,7 @@ export function BusinessDashboard() {
         value={selectedCompanyId}
         onValueChange={setSelectedCompanyId}
       >
-        <SelectTrigger className="w-[300px]">
+        <SelectTrigger className="w-full sm:w-[300px]">
           <SelectValue placeholder="Selecione uma empresa" />
         </SelectTrigger>
         <SelectContent>
@@ -243,9 +243,10 @@ export function BusinessDashboard() {
         </SelectContent>
       </Select>
 
-      <div className="flex items-center justify-center space-x-4">
+      <div className="flex items-center justify-center gap-3 sm:gap-4">
         <Button
           variant="outline"
+          size="icon"
           onClick={() => changeMonth(-1)}
           disabled={
             !!creationDate &&
@@ -256,13 +257,13 @@ export function BusinessDashboard() {
           ←
         </Button>
 
-        <span className="text-lg font-semibold min-w-[200px] text-center">
+        <span className="text-base sm:text-lg font-semibold min-w-[140px] sm:min-w-[200px] text-center">
           {month !== null && year !== null
             ? `${monthNames[month - 1]} de ${year}`
             : "Carregando..."}
         </span>
 
-        <Button variant="outline" onClick={() => changeMonth(1)}>
+        <Button variant="outline" size="icon" onClick={() => changeMonth(1)}>
           →
         </Button>
       </div>
