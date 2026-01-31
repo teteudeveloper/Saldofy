@@ -76,13 +76,17 @@ export default function SignUpPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedType("BUSINESS")
-                  setStep("form")
-                }}
-                className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-left"
+                disabled
+                className="w-full p-4 border-2 border-gray-200 rounded-lg bg-gray-50 text-left opacity-60 cursor-not-allowed"
               >
-                <div className="font-semibold text-gray-900">Finanças Empresariais</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-semibold text-gray-900">
+                    Finanças Empresariais
+                  </div>
+                  <span className="px-3 py-1 text-xs font-medium border border-gray-200 rounded-md bg-white text-gray-500">
+                    Em breve
+                  </span>
+                </div>
                 <div className="text-sm text-gray-600">Gerencie sua empresa e finanças corporativas</div>
               </button>
             </div>
