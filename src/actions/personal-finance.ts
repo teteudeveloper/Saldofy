@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import { transactionSchema, categorySchema, goalSchema } from "@/lib/validations/finance"
 import { revalidatePath } from "next/cache"
+import {
+  deleteCategoryBudget,
+  ensureCategoryBudgetsTable,
+  getBudgetsByCategoryId,
+  upsertCategoryBudget,
+} from "@/lib/finance/category-budgets"
 
 async function getPersonalTenant(userId: string) {
   const tenantUser = await prisma.tenantUser.findFirst({
@@ -31,7 +37,7 @@ export async function createTransaction(formData: FormData) {
     const tenant = await getPersonalTenant(user.id)
 
     const data = {
-      description: formData.get("description") as string,
+      description: (formData.get("description") as string | null) ?? "",
       amount: formData.get("amount") as string,
       type: formData.get("type") as string,
       date: formData.get("date") as string,
@@ -40,20 +46,112 @@ export async function createTransaction(formData: FormData) {
 
     const validated = transactionSchema.parse(data)
 
-    await prisma.transaction.create({
-      data: {
-        description: validated.description,
-        amount: validated.amount,
-        type: validated.type as "INCOME" | "EXPENSE",
-        date: new Date(validated.date),
+    const transactionDate = new Date(validated.date)
+    let budgetAlert:
+      | {
+          categoryId: string
+          categoryName: string
+          monthlyLimit: number
+          spent: number
+          percentage: number
+          crossed80: boolean
+          crossed100: boolean
+        }
+      | undefined
+
+    if (validated.type === "EXPENSE") {
+      await ensureCategoryBudgetsTable()
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const anyTx = tx as any
+      let previousSpent = 0
+      let categoryName = ""
+      let monthlyLimit: number | null = null
+
+      if (validated.type === "EXPENSE") {
+        const category = await anyTx.category.findFirst({
+          where: {
+            id: validated.categoryId,
+            tenantId: tenant.id,
+          },
+        })
+
+        categoryName = category?.name ?? ""
+        const rows = (await anyTx.$queryRawUnsafe(
+          `SELECT monthly_limit FROM category_budgets WHERE tenant_id = $1 AND category_id = $2 LIMIT 1;`,
+          tenant.id,
+          validated.categoryId
+        )) as { monthly_limit: number }[]
+        monthlyLimit = rows?.[0]?.monthly_limit != null ? Number(rows[0].monthly_limit) : null
+
+        if (monthlyLimit && monthlyLimit > 0) {
+          const startDate = new Date(
+            transactionDate.getFullYear(),
+            transactionDate.getMonth(),
+            1
+          )
+          const endDate = new Date(
+            transactionDate.getFullYear(),
+            transactionDate.getMonth() + 1,
+            0,
+            23,
+            59,
+            59,
+            999
+          )
+
+          const aggregate = await anyTx.transaction.aggregate({
+            where: {
+              tenantId: tenant.id,
+              type: "EXPENSE",
+              categoryId: validated.categoryId,
+              date: {
+                gte: startDate,
+                lte: endDate,
+              },
+            },
+            _sum: {
+              amount: true,
+            },
+          })
+
+          previousSpent = aggregate._sum.amount ?? 0
+        }
+      }
+
+      await anyTx.transaction.create({
+        data: {
+          description: validated.description,
+          amount: validated.amount,
+          type: validated.type as "INCOME" | "EXPENSE",
+          date: transactionDate,
+          categoryId: validated.categoryId,
+          tenantId: tenant.id,
+          userId: user.id,
+        },
+      })
+
+      if (validated.type !== "EXPENSE") return
+      if (!monthlyLimit || monthlyLimit <= 0) return
+
+      const newSpent = previousSpent + validated.amount
+      const previousPercentage = previousSpent / monthlyLimit
+      const newPercentage = newSpent / monthlyLimit
+
+      budgetAlert = {
         categoryId: validated.categoryId,
-        tenantId: tenant.id,
-        userId: user.id,
-      },
+        categoryName,
+        monthlyLimit,
+        spent: newSpent,
+        percentage: newPercentage,
+        crossed80: previousPercentage < 0.8 && newPercentage >= 0.8,
+        crossed100: previousPercentage < 1 && newPercentage >= 1,
+      }
     })
 
     revalidatePath("/dashboard/personal")
-    return { success: true }
+    return { success: true, budgetAlert }
   } catch (error: any) {
     console.error("CreateTransaction error:", error)
     return { error: error.message || "Erro ao criar transação" }
@@ -66,7 +164,7 @@ export async function updateTransaction(id: string, formData: FormData) {
     const tenant = await getPersonalTenant(user.id)
 
     const data = {
-      description: formData.get("description") as string,
+      description: (formData.get("description") as string | null) ?? "",
       amount: formData.get("amount") as string,
       type: formData.get("type") as string,
       date: formData.get("date") as string,
@@ -158,19 +256,28 @@ export async function createCategory(formData: FormData) {
       color: formData.get("color") as string,
       type: formData.get("type") as string,
       icon: formData.get("icon") as string | undefined,
+      monthlyLimit: formData.get("monthlyLimit") as string | undefined,
     }
 
     const validated = categorySchema.parse(data)
 
-    await prisma.category.create({
+    const created = await prisma.category.create({
       data: {
         name: validated.name,
         color: validated.color,
         type: validated.type as "INCOME" | "EXPENSE",
-        icon: validated.icon,
+        icon: validated.icon ?? null,
         tenantId: tenant.id,
       },
     })
+
+    if (validated.type === "EXPENSE") {
+      await upsertCategoryBudget({
+        tenantId: tenant.id,
+        categoryId: created.id,
+        monthlyLimit: validated.monthlyLimit ?? 0,
+      })
+    }
 
     revalidatePath("/dashboard/personal")
     return { success: true }
@@ -190,6 +297,7 @@ export async function updateCategory(id: string, formData: FormData) {
       color: formData.get("color") as string,
       type: formData.get("type") as string,
       icon: formData.get("icon") as string | undefined,
+      monthlyLimit: formData.get("monthlyLimit") as string | undefined,
     }
 
     const validated = categorySchema.parse(data)
@@ -203,9 +311,19 @@ export async function updateCategory(id: string, formData: FormData) {
         name: validated.name,
         color: validated.color,
         type: validated.type as "INCOME" | "EXPENSE",
-        icon: validated.icon,
+        icon: validated.icon ?? null,
       },
     })
+
+    if (validated.type === "EXPENSE") {
+      await upsertCategoryBudget({
+        tenantId: tenant.id,
+        categoryId: id,
+        monthlyLimit: validated.monthlyLimit ?? 0,
+      })
+    } else {
+      await deleteCategoryBudget({ tenantId: tenant.id, categoryId: id })
+    }
 
     revalidatePath("/dashboard/personal")
     return { success: true }
@@ -220,6 +338,7 @@ export async function deleteCategory(id: string) {
     const user = await requireAuth()
     const tenant = await getPersonalTenant(user.id)
 
+    await deleteCategoryBudget({ tenantId: tenant.id, categoryId: id })
     await prisma.category.delete({
       where: {
         id,
@@ -245,12 +364,46 @@ export async function getCategories(type?: "INCOME" | "EXPENSE") {
         tenantId: tenant.id,
         ...(type && { type }),
       },
-      orderBy: {
-        name: "asc",
-      },
     })
 
-    return { success: true, data: categories }
+    const budgets = await getBudgetsByCategoryId(tenant.id)
+    const withBudgets = categories.map((c: any) => ({
+      ...c,
+      monthlyLimit: budgets.get(c.id) ?? null,
+    }))
+
+    const incomeOrder = new Map(
+      ["Salário", "Freelance", "Investimentos", "Outro"].map((name, index) => [
+        name.toLowerCase(),
+        index,
+      ])
+    )
+
+    const sorted = [...withBudgets].sort((a, b) => {
+      const aType = String((a as any).type)
+      const bType = String((b as any).type)
+
+      // When filtering by type, keep only one branch of ordering.
+      if (type === "INCOME" || (!type && aType === "INCOME" && bType === "INCOME")) {
+        const aKey = String((a as any).name ?? "").toLowerCase()
+        const bKey = String((b as any).name ?? "").toLowerCase()
+        const aRank = incomeOrder.has(aKey) ? (incomeOrder.get(aKey) as number) : 999
+        const bRank = incomeOrder.has(bKey) ? (incomeOrder.get(bKey) as number) : 999
+        if (aRank !== bRank) return aRank - bRank
+        return String((a as any).name ?? "").localeCompare(String((b as any).name ?? ""))
+      }
+
+      if (!type) {
+        if (aType !== bType) {
+          // INCOME first, then EXPENSE
+          return aType === "INCOME" ? -1 : 1
+        }
+      }
+
+      return String((a as any).name ?? "").localeCompare(String((b as any).name ?? ""))
+    })
+
+    return { success: true, data: sorted }
   } catch (error: any) {
     console.error("GetCategories error:", error)
     return { error: error.message || "Erro ao buscar categorias" }
