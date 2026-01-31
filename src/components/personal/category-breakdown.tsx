@@ -43,9 +43,6 @@ export function CategoryBreakdown({ data }: CategoryBreakdownProps) {
                     />
                     <span className="font-medium">{item.category.name}</span>
                   </div>
-                  <span className="text-muted-foreground">
-                    {item.percentage.toFixed(1)}%
-                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="h-2 flex-1 rounded-full bg-gray-200 overflow-hidden">
@@ -83,9 +80,6 @@ export function CategoryBreakdown({ data }: CategoryBreakdownProps) {
                     />
                     <span className="font-medium">{item.category.name}</span>
                   </div>
-                  <span className="text-muted-foreground">
-                    {item.percentage.toFixed(1)}%
-                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="h-2 flex-1 rounded-full bg-gray-200 overflow-hidden">
