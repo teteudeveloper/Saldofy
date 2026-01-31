@@ -9,6 +9,7 @@ import { getMonthlyStats, getTransactions, getCategories, getUserCreationDate } 
 import { TransactionList } from "./transaction-list"
 import { AddTransactionDialog } from "./add-transaction-dialog"
 import { CategoryBreakdown } from "./category-breakdown"
+import { CategoryBudgetsCard } from "./category-budgets-card"
 
 export function PersonalDashboard() {
   const [month, setMonth] = useState<number | null>(null)
@@ -215,6 +216,14 @@ export function PersonalDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <CategoryBudgetsCard
+        categories={categories}
+        categoryBreakdown={stats?.categoryBreakdown}
+        month={month}
+        year={year}
+        onRefresh={loadData}
+      />
 
       {stats?.categoryBreakdown && stats.categoryBreakdown.length > 0 && (
         <CategoryBreakdown data={stats.categoryBreakdown} />
