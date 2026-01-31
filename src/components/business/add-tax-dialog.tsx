@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { createTax } from "@/actions/business-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
 interface AddTaxDialogProps {
   open: boolean
@@ -31,6 +32,7 @@ export function AddTaxDialog({
 }: AddTaxDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [dueDate, setDueDate] = useState<string>("")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -38,6 +40,7 @@ export function AddTaxDialog({
 
     const formData = new FormData(e.currentTarget)
     formData.set("companyId", companyId)
+    formData.set("dueDate", dueDate)
 
     const result = await createTax(formData)
 
@@ -99,12 +102,12 @@ export function AddTaxDialog({
 
             <div className="space-y-2">
               <Label htmlFor="dueDate">Data de vencimento</Label>
-              <Input
+              <InlineDatePicker
                 id="dueDate"
-                name="dueDate"
-                type="date"
-                required
+                value={dueDate}
+                onChange={setDueDate}
                 disabled={loading}
+                placeholder="Selecione a data"
               />
             </div>
           </div>
@@ -118,7 +121,7 @@ export function AddTaxDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || !dueDate}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

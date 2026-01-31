@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import { createBusinessExpense } from "@/actions/business-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
 interface AddExpenseDialogProps {
   open: boolean
@@ -46,6 +47,7 @@ export function AddExpenseDialog({
   const [loading, setLoading] = useState(false)
   const [categoryId, setCategoryId] = useState<string>("")
   const [employeeId, setEmployeeId] = useState<string>("")
+  const [date, setDate] = useState<string>("")
   const expenseCategories = useMemo(
     () => categories.filter((c) => c.type === "EXPENSE"),
     [categories]
@@ -53,9 +55,10 @@ export function AddExpenseDialog({
 
   useEffect(() => {
     if (!open) return
+    setDate(formatDateForInput(defaultDate ?? new Date()))
     const stillValid = expenseCategories.some((c) => c.id === categoryId)
     if (!stillValid) setCategoryId(expenseCategories[0]?.id ?? "")
-  }, [open, expenseCategories, categoryId])
+  }, [open, expenseCategories, categoryId, defaultDate])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -65,6 +68,7 @@ export function AddExpenseDialog({
     formData.set("companyId", companyId)
     formData.set("categoryId", categoryId)
     formData.set("employeeId", employeeId)
+    formData.set("date", date || formatDateForInput(defaultDate ?? new Date()))
 
     if (!categoryId) {
       toast({
@@ -189,16 +193,10 @@ export function AddExpenseDialog({
 
             <div className="space-y-2">
               <Label htmlFor="date">Data</Label>
-              <Input
+              <InlineDatePicker
                 id="date"
-                name="date"
-                type="date"
-                defaultValue={
-                  defaultDate
-                    ? formatDateForInput(defaultDate)
-                    : formatDateForInput(new Date())
-                }
-                required
+                value={date || formatDateForInput(defaultDate ?? new Date())}
+                onChange={setDate}
                 disabled={loading}
               />
             </div>

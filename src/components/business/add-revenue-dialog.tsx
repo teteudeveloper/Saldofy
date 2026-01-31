@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { createRevenue } from "@/actions/business-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
 interface AddRevenueDialogProps {
   open: boolean
@@ -33,6 +34,7 @@ export function AddRevenueDialog({
 }: AddRevenueDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [date, setDate] = useState<string>("")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -40,6 +42,7 @@ export function AddRevenueDialog({
 
     const formData = new FormData(e.currentTarget)
     formData.set("companyId", companyId)
+    formData.set("date", date || formatDateForInput(defaultDate ?? new Date()))
 
     const result = await createRevenue(formData)
 
@@ -108,16 +111,10 @@ export function AddRevenueDialog({
 
             <div className="space-y-2">
               <Label htmlFor="date">Data</Label>
-              <Input
+              <InlineDatePicker
                 id="date"
-                name="date"
-                type="date"
-                defaultValue={
-                  defaultDate
-                    ? formatDateForInput(defaultDate)
-                    : formatDateForInput(new Date())
-                }
-                required
+                value={date || formatDateForInput(defaultDate ?? new Date())}
+                onChange={setDate}
                 disabled={loading}
               />
             </div>

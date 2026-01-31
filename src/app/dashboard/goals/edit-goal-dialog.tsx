@@ -15,6 +15,16 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { updateGoal } from "@/actions/personal-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
+
+const formatDateForInput = (date: Date | null) => {
+  if (!date) return ""
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 interface EditGoalDialogProps {
   goal: any
@@ -29,12 +39,14 @@ export function EditGoalDialog({
 }: EditGoalDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [deadline, setDeadline] = useState<string>(() => formatDateForInput(goal.deadline))
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    if (deadline) formData.set("deadline", deadline)
     const result = await updateGoal(goal.id, formData)
 
     if (result.error) {
@@ -54,15 +66,6 @@ export function EditGoalDialog({
 
     onSuccess()
     setLoading(false)
-  }
-
-  const formatDateForInput = (date: Date | null) => {
-    if (!date) return ""
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
   }
 
   return (
@@ -119,12 +122,12 @@ export function EditGoalDialog({
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Prazo (opcional)</Label>
-              <Input
+              <InlineDatePicker
                 id="deadline"
-                name="deadline"
-                type="date"
-                defaultValue={formatDateForInput(goal.deadline)}
+                value={deadline}
+                onChange={setDeadline}
                 disabled={loading}
+                placeholder="Selecione um prazo"
               />
             </div>
           </div>

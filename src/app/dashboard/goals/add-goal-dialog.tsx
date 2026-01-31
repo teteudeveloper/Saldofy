@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { createGoal } from "@/actions/personal-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
 interface AddGoalDialogProps {
   open: boolean
@@ -29,12 +30,14 @@ export function AddGoalDialog({
 }: AddGoalDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [deadline, setDeadline] = useState<string>("")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    if (deadline) formData.set("deadline", deadline)
     const result = await createGoal(formData)
 
     if (result.error) {
@@ -108,11 +111,12 @@ export function AddGoalDialog({
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Prazo (opcional)</Label>
-              <Input
+              <InlineDatePicker
                 id="deadline"
-                name="deadline"
-                type="date"
+                value={deadline}
+                onChange={setDeadline}
                 disabled={loading}
+                placeholder="Selecione um prazo"
               />
             </div>
           </div>
