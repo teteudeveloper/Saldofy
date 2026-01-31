@@ -22,6 +22,15 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import { updateTransaction } from "@/actions/personal-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
+
+const formatDateForInput = (date: Date) => {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 interface EditTransactionDialogProps {
   transaction: any
@@ -40,6 +49,7 @@ export function EditTransactionDialog({
   const [loading, setLoading] = useState(false)
   const [type, setType] = useState<"INCOME" | "EXPENSE">(transaction.type)
   const [categoryId, setCategoryId] = useState<string>(transaction.categoryId)
+  const [date, setDate] = useState<string>(() => formatDateForInput(transaction.date))
 
   const filteredCategories = useMemo(
     () => categories.filter((cat) => cat.type === type),
@@ -58,6 +68,7 @@ export function EditTransactionDialog({
     const formData = new FormData(e.currentTarget)
     formData.set("type", type)
     formData.set("categoryId", categoryId)
+    formData.set("date", date)
 
     if (!categoryId) {
       toast({
@@ -88,14 +99,6 @@ export function EditTransactionDialog({
 
     onSuccess()
     setLoading(false)
-  }
-
-  const formatDateForInput = (date: Date) => {
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
   }
 
   return (
@@ -133,7 +136,6 @@ export function EditTransactionDialog({
                 name="description"
                 defaultValue={transaction.description}
                 placeholder="Ex: Supermercado"
-                required
                 disabled={loading}
               />
             </div>
@@ -180,12 +182,10 @@ export function EditTransactionDialog({
 
             <div className="space-y-2">
               <Label htmlFor="date">Data</Label>
-              <Input
+              <InlineDatePicker
                 id="date"
-                name="date"
-                type="date"
-                defaultValue={formatDateForInput(transaction.date)}
-                required
+                value={date}
+                onChange={setDate}
                 disabled={loading}
               />
             </div>

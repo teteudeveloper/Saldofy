@@ -101,7 +101,9 @@ export function TransactionList({
               </div>
               <div className="min-w-0">
                 <p className="font-medium truncate sm:whitespace-normal sm:break-words">
-                  {transaction.description}
+                  {transaction.description?.trim?.()
+                    ? transaction.description
+                    : "Sem descrição"}
                 </p>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                   <span>{transaction.category.name}</span>

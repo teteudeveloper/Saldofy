@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import { createTransaction } from "@/actions/personal-finance"
 import { Loader2 } from "lucide-react"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
 interface AddTransactionDialogProps {
   open: boolean
@@ -42,6 +43,7 @@ export function AddTransactionDialog({
   const [loading, setLoading] = useState(false)
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE")
   const [categoryId, setCategoryId] = useState<string>("")
+  const [date, setDate] = useState<string>("")
 
   const filteredCategories = useMemo(
     () => categories.filter((cat) => cat.type === type),
@@ -50,9 +52,15 @@ export function AddTransactionDialog({
 
   useEffect(() => {
     if (!open) return
+    if (categories.length > 0) {
+      const hasExpense = categories.some((c) => c.type === "EXPENSE")
+      const hasIncome = categories.some((c) => c.type === "INCOME")
+      if (!hasExpense && hasIncome) setType("INCOME")
+    }
+    setDate(formatDateForInput(defaultDate ?? new Date()))
     const stillValid = filteredCategories.some((c) => c.id === categoryId)
     if (!stillValid) setCategoryId(filteredCategories[0]?.id ?? "")
-  }, [open, type, filteredCategories, categoryId])
+  }, [open, type, filteredCategories, categoryId, categories, defaultDate])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -61,6 +69,7 @@ export function AddTransactionDialog({
     const formData = new FormData(e.currentTarget)
     formData.set("type", type)
     formData.set("categoryId", categoryId)
+    formData.set("date", date || formatDateForInput(defaultDate ?? new Date()))
 
     if (!categoryId) {
       toast({
@@ -88,6 +97,19 @@ export function AddTransactionDialog({
       title: "Transação criada",
       description: "A transação foi adicionada com sucesso.",
     })
+
+    if (result.budgetAlert?.crossed100) {
+      toast({
+        variant: "destructive",
+        title: "Limite mensal estourado",
+        description: `Você ultrapassou o limite mensal de ${result.budgetAlert.categoryName}.`,
+      })
+    } else if (result.budgetAlert?.crossed80) {
+      toast({
+        title: "Atenção: 80% do limite",
+        description: `Você atingiu 80% do limite mensal de ${result.budgetAlert.categoryName}.`,
+      })
+    }
 
     onSuccess()
     onOpenChange(false)
@@ -135,7 +157,6 @@ export function AddTransactionDialog({
                 id="description"
                 name="description"
                 placeholder="Ex: Supermercado"
-                required
                 disabled={loading}
               />
             </div>
@@ -177,20 +198,19 @@ export function AddTransactionDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {filteredCategories.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Crie uma categoria para este tipo antes de adicionar uma transação.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="date">Data</Label>
-              <Input
+              <InlineDatePicker
                 id="date"
-                name="date"
-                type="date"
-                defaultValue={
-                  defaultDate
-                    ? formatDateForInput(defaultDate)
-                    : formatDateForInput(new Date())
-                }
-                required
+                value={date}
+                onChange={setDate}
                 disabled={loading}
               />
             </div>
@@ -205,7 +225,7 @@ export function AddTransactionDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || filteredCategories.length === 0}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
