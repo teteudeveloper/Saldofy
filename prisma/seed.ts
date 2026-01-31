@@ -57,13 +57,7 @@ async function main() {
             { name: 'Salário', type: TransactionType.INCOME, color: '#10b981' },
             { name: 'Freelance', type: TransactionType.INCOME, color: '#3b82f6' },
             { name: 'Investimentos', type: TransactionType.INCOME, color: '#8b5cf6' },
-            { name: 'Alimentação', type: TransactionType.EXPENSE, color: '#ef4444' },
-            { name: 'Transporte', type: TransactionType.EXPENSE, color: '#f59e0b' },
-            { name: 'Moradia', type: TransactionType.EXPENSE, color: '#8b5cf6' },
-            { name: 'Saúde', type: TransactionType.EXPENSE, color: '#ec4899' },
-            { name: 'Lazer', type: TransactionType.EXPENSE, color: '#06b6d4' },
-            { name: 'Educação', type: TransactionType.EXPENSE, color: '#14b8a6' },
-            { name: 'Outros', type: TransactionType.EXPENSE, color: '#64748b' },
+            { name: 'Outro', type: TransactionType.INCOME, color: '#64748b' },
           ],
         },
       },
@@ -76,9 +70,8 @@ async function main() {
   console.log('✅ Personal tenant created')
 
   const incomeCategory = personalTenant.categories.find(c => c.name === 'Salário')
-  const expenseCategory = personalTenant.categories.find(c => c.name === 'Alimentação')
 
-  if (incomeCategory && expenseCategory) {
+  if (incomeCategory) {
     await prisma.transaction.createMany({
       data: [
         {
@@ -87,15 +80,6 @@ async function main() {
           type: TransactionType.INCOME,
           date: new Date(),
           categoryId: incomeCategory.id,
-          tenantId: personalTenant.id,
-          userId: user1.id,
-        },
-        {
-          description: 'Supermercado',
-          amount: 450,
-          type: TransactionType.EXPENSE,
-          date: new Date(),
-          categoryId: expenseCategory.id,
           tenantId: personalTenant.id,
           userId: user1.id,
         },
