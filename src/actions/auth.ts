@@ -62,22 +62,20 @@ export async function signUp(formData: FormData) {
             role: "OWNER",
           },
         },
-        categories: {
-          createMany: {
-            data: [
-              { name: "Salário", type: "INCOME", color: "#10b981" },
-              { name: "Freelance", type: "INCOME", color: "#3b82f6" },
-              { name: "Investimentos", type: "INCOME", color: "#8b5cf6" },
-              { name: "Alimentação", type: "EXPENSE", color: "#ef4444" },
-              { name: "Transporte", type: "EXPENSE", color: "#f59e0b" },
-              { name: "Moradia", type: "EXPENSE", color: "#8b5cf6" },
-              { name: "Saúde", type: "EXPENSE", color: "#ec4899" },
-              { name: "Lazer", type: "EXPENSE", color: "#06b6d4" },
-              { name: "Educação", type: "EXPENSE", color: "#14b8a6" },
-              { name: "Outros", type: "EXPENSE", color: "#64748b" },
-            ],
-          },
-        },
+        ...(data.tenantType === "PERSONAL"
+          ? {
+              categories: {
+                createMany: {
+                  data: [
+                    { name: "Salário", type: "INCOME", color: "#10b981" },
+                    { name: "Freelance", type: "INCOME", color: "#3b82f6" },
+                    { name: "Investimentos", type: "INCOME", color: "#8b5cf6" },
+                    { name: "Outro", type: "INCOME", color: "#64748b" },
+                  ],
+                },
+              },
+            }
+          : {}),
       },
     })
 
