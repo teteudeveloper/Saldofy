@@ -24,6 +24,18 @@ import { createTransaction } from "@/actions/personal-finance"
 import { Loader2 } from "lucide-react"
 import { InlineDatePicker } from "@/components/ui/inline-date-picker"
 
+const formatDateForInput = (date: Date) => {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function isTransactionType(value: string): value is "INCOME" | "EXPENSE" {
+  return value === "INCOME" || value === "EXPENSE"
+}
+
 interface AddTransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -52,15 +64,25 @@ export function AddTransactionDialog({
 
   useEffect(() => {
     if (!open) return
-    if (categories.length > 0) {
+    setDate(formatDateForInput(defaultDate ?? new Date()))
+
+    // Only pick a default type when opening the dialog; don't override the user's choice.
+    setType((currentType) => {
+      const hasCurrentType = categories.some((c) => c.type === currentType)
+      if (hasCurrentType) return currentType
       const hasExpense = categories.some((c) => c.type === "EXPENSE")
       const hasIncome = categories.some((c) => c.type === "INCOME")
-      if (!hasExpense && hasIncome) setType("INCOME")
-    }
-    setDate(formatDateForInput(defaultDate ?? new Date()))
+      if (hasExpense) return "EXPENSE"
+      if (hasIncome) return "INCOME"
+      return currentType
+    })
+  }, [open, categories, defaultDate])
+
+  useEffect(() => {
+    if (!open) return
     const stillValid = filteredCategories.some((c) => c.id === categoryId)
     if (!stillValid) setCategoryId(filteredCategories[0]?.id ?? "")
-  }, [open, type, filteredCategories, categoryId, categories, defaultDate])
+  }, [open, filteredCategories, categoryId])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -116,13 +138,6 @@ export function AddTransactionDialog({
     setLoading(false)
   }
 
-  const formatDateForInput = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -139,7 +154,9 @@ export function AddTransactionDialog({
               <Label>Tipo</Label>
               <Select
                 value={type}
-                onValueChange={(value: string) => setType(value as "INCOME" | "EXPENSE")}
+                onValueChange={(value: string) => {
+                  if (isTransactionType(value)) setType(value)
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
