@@ -1,16 +1,49 @@
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
-    container_name: saldofy-db
-    restart: always
-    ports:
-      - "5433:5432"
     environment:
       POSTGRES_USER: saldofy
       POSTGRES_PASSWORD: saldofy123
       POSTGRES_DB: saldofy
+    ports:
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - saldofy_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saldofy -d saldofy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://saldofy:saldofy123@db:5432/saldofy"
+      DIRECT_URL: "postgresql://saldofy:saldofy123@db:5432/saldofy"
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: "postgresql://saldofy:saldofy123@db:5432/saldofy"
+      DIRECT_URL: "postgresql://saldofy:saldofy123@db:5432/saldofy"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXTAUTH_SECRET: "change-me-in-production"
+      SMTP_HOST: "smtp.example.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "user@example.com"
+      SMTP_PASSWORD: "password"
+      SMTP_FROM: "noreply@saldofy.com"
 
 volumes:
-  postgres_data:
+  saldofy_pg:
