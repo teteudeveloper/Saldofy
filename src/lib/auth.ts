@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import { prisma } from "../lib/prisma"
 import bcrypt from "bcryptjs"
+import { signValue, verifyValue } from "./session"
 
 const SESSION_COOKIE = "saldofy_session"
 const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000
@@ -10,6 +11,19 @@ interface SessionData {
   email: string
   name: string
   expiresAt: number
+}
+
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Missing SESSION_SECRET (or NEXTAUTH_SECRET) in production")
+    }
+    return "dev-session-secret"
+  }
+
+  return secret
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -48,8 +62,13 @@ export async function createSession(userId: string) {
     expiresAt: Date.now() + SESSION_DURATION,
   }
 
+  const cookieValue = await signValue(
+    JSON.stringify(sessionData),
+    getSessionSecret()
+  )
+
   const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE, JSON.stringify(sessionData), {
+  cookieStore.set(SESSION_COOKIE, cookieValue, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -69,7 +88,13 @@ export async function getSession(): Promise<SessionData | null> {
   }
 
   try {
-    const sessionData: SessionData = JSON.parse(sessionCookie.value)
+    const verified = await verifyValue(sessionCookie.value, getSessionSecret())
+    if (!verified.valid) {
+      await deleteSession()
+      return null
+    }
+
+    const sessionData: SessionData = JSON.parse(verified.payloadJson)
 
     if (Date.now() > sessionData.expiresAt) {
       await deleteSession()
@@ -86,6 +111,17 @@ export async function getSession(): Promise<SessionData | null> {
 export async function deleteSession() {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE)
+}
+
+export async function hasValidSessionCookie(rawCookieValue: string): Promise<boolean> {
+  try {
+    const verified = await verifyValue(rawCookieValue, getSessionSecret())
+    if (!verified.valid) return false
+    const sessionData: SessionData = JSON.parse(verified.payloadJson)
+    return Date.now() <= sessionData.expiresAt
+  } catch {
+    return false
+  }
 }
 
 export async function getCurrentUser() {
