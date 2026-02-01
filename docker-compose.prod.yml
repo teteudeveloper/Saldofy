@@ -1,0 +1,15 @@
+services:
+  migrate:
+    build:
+      context: .
+      target: builder
+    env_file:
+      - .env
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+  web:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-3000}:3000"
